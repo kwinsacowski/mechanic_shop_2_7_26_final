@@ -7,6 +7,11 @@ service_mechanics = db.Table('service_mechanics',
     db.Column('mechanic_id', db.Integer, db.ForeignKey('mechanics.id'), primary_key=True)
 )
 
+service_inventory = db.Table(
+    "service_inventory",
+    db.Column("service_ticket_id", db.Integer, db.ForeignKey("service_tickets.id"), primary_key=True),
+    db.Column("inventory_id", db.Integer, db.ForeignKey("inventory.id"), primary_key=True),
+)
 class Customer(db.Model):
     __tablename__ = 'customers'
 
@@ -34,6 +39,7 @@ class ServiceTicket(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     pickup_date = db.Column(db.Date, nullable=True)
 
+    inventory = db.relationship ('Inventory', secondary=service_inventory, backref=db.backref('service_tickets', lazy=True))
     mechanics = db.relationship('Mechanic', secondary=service_mechanics, backref=db.backref('service_tickets', lazy=True))
 
 class Mechanic(db.Model):
@@ -45,3 +51,9 @@ class Mechanic(db.Model):
     phone_number = db.Column(db.String(20), nullable=False)
     salary = db.Column(db.Float, nullable=False)
 
+class Inventory(db.Model):
+    __tablename__ = "inventory"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Float, nullable=False)

@@ -4,8 +4,8 @@ from app.extensions import db, limiter, cache
 from app.models import Customer, ServiceTicket
 from app.blueprints.customers import customers_bp
 from app.blueprints.customers.schemas import customer_schema, login_schema, customers_schema
-import encode_token, token_required
-from app.blueprints.service_tickets.schemas import service_ticket_schema
+from app.utils.auth import encode_token, token_required
+from app.blueprints.service_tickets.schemas import service_tickets_schema
 
 @customers_bp.post("/login")
 def login_customer():
@@ -20,8 +20,9 @@ def login_customer():
     password = data.get("password")
 
     customer = Customer.query.filter_by(email=email).first()
-    if not customer or customer.password != password:
+    if not customer or not customer.check_password(password):
         return {"message": "Invalid credentials"}, 401
+
 
     token = encode_token(customer.id)
     return {"token": token}, 200
@@ -30,7 +31,7 @@ def login_customer():
 @token_required
 def get_my_tickets(customer_id):
     tickets = ServiceTicket.query.filter_by(customer_id=customer_id).all()
-    return service_ticket_schema.dump(tickets, many=True), 200
+    return service_tickets_schema.dump(tickets, many=True), 200
 
 @customers_bp.post("/")
 @limiter.limit("5 per minute") # Limit to 5 customer creations per minute, considering multple users servicing multiple customers at one time
@@ -45,8 +46,10 @@ def create_customer():
         name=data["name"],
         email=data["email"],
         phone_number=data["phone_number"],
-        password=data["password"],
+        password="temp"  # will be overwritten by set_password
     )
+    customer.set_password(data["password"])
+
 
     db.session.add(customer)
     db.session.commit()
@@ -76,14 +79,16 @@ def get_customers():
     }, 200
 
 @customers_bp.get("/<int:id>")
-@cache.cached(timeout=120) # Cache individual customer details for 2 minutes, as users may frequently view the same customer's details while managing their account, and this can help reduce database load for popular customers
 def get_customer(id):
     customer = Customer.query.get_or_404(id)
     return customer_schema.dump(customer), 200
 
 @customers_bp.put("/<int:id>")
 @token_required
-def update_customer(id):
+def update_customer(customer_id, id):
+    if customer_id != id:
+        return {"message": "Forbidden"}, 403
+    
     customer = Customer.query.get_or_404(id)
     data = request.get_json() or {}
 
@@ -96,7 +101,9 @@ def update_customer(id):
 
 @customers_bp.delete("/<int:id>")
 @token_required
-def delete_customer(id):
+def delete_customer(customer_id, id):
+    if customer_id != id:
+        return {"message": "Forbidden"}, 403
     customer = Customer.query.get_or_404(id)
     db.session.delete(customer)
     db.session.commit()

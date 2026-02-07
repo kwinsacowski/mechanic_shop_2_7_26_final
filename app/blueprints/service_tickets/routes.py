@@ -6,6 +6,7 @@ from app.models import ServiceTicket, Mechanic, Customer, service_mechanics
 from app.blueprints.mechanics import mechanics_bp
 from app.blueprints.mechanics.schemas import mechanic_schema
 from app.blueprints.service_tickets import service_tickets_bp
+from app.models import Inventory
 from app.blueprints.service_tickets.schemas import (
     service_ticket_schema,
     service_tickets_schema,
@@ -91,7 +92,7 @@ def edit_service_ticket(ticket_id):
     except Exception as e:
         return {"error": str(e)}, 404
     
-@service_tickets_bp.put("/int:ticket_id/edit")
+@service_tickets_bp.put("/<int:ticket_id>/edit")
 def edit_ticket_mechanics(ticket_id: int):
     """
     Body JSON:
@@ -167,3 +168,14 @@ def mechanics_most_tickets():
         result.append(data)
 
     return result, 200
+
+@service_tickets_bp.put("/<int:ticket_id>/add-part/<int:inventory_id>")
+def add_part_to_ticket(ticket_id, inventory_id):
+    ticket = ServiceTicket.query.get_or_404(ticket_id)
+    part = Inventory.query.get_or_404(inventory_id)
+
+    if part not in ticket.inventory:
+        ticket.inventory.append(part)
+        db.session.commit()
+
+    return service_ticket_schema.dump(ticket), 200

@@ -22,10 +22,12 @@ def create_app() -> Flask:
     from app.blueprints.customers import customers_bp
     from app.blueprints.mechanics import mechanics_bp
     from app.blueprints.service_tickets import service_tickets_bp
+    from app.blueprints.inventory import inventory_bp
 
     app.register_blueprint(customers_bp, url_prefix="/customers")
     app.register_blueprint(mechanics_bp, url_prefix="/mechanics")
     app.register_blueprint(service_tickets_bp, url_prefix="/service-tickets")
+    app.register_blueprint(inventory_bp, url_prefix="/inventory")
 
     with app.app_context():
         db.create_all()
