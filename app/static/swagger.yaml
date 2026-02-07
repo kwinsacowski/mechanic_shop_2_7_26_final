@@ -5,10 +5,12 @@ info:
   description: "API for managing customers, mechanics, inventory, and service tickets."
   version: "1.0.0"
 
+host: mechanic-shop-2-7-26-final.onrender.com
+
 basePath: "/"
 
 schemes:
-  - http
+  - https
 
 securityDefinitions:
   BearerAuth:
