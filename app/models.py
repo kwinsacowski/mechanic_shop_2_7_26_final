@@ -13,6 +13,7 @@ class Customer(db.Model):
     name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     phone_number = db.Column(db.String(20), nullable=False)
+    password = db.Column(db.String(128), nullable=False)
 
     service_tickets = db.relationship('ServiceTicket', backref='customer', lazy=True)
 

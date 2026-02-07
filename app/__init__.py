@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from dotenv import load_dotenv
 
-from app.extensions import db, ma
+from app.extensions import db, ma, limiter, cache
 
 load_dotenv()
 
@@ -11,11 +11,12 @@ def create_app() -> Flask:
 
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
     db.init_app(app)
     ma.init_app(app)
-
+    limiter.init_app(app)
+    cache.init_app(app)
     import app.models as models
 
     from app.blueprints.customers import customers_bp

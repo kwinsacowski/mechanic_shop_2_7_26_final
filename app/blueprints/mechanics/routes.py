@@ -2,8 +2,7 @@ from flask import request
 from app.extensions import db
 from app.models import Mechanic
 from app.blueprints.mechanics import mechanics_bp
-from app.blueprints.mechanics.schemas import mechanic_schema, mechanics_schema
-
+from app.blueprints.mechanics.schemas import mechanic_schema
 
 # CREATE mechanic
 @mechanics_bp.post("/")
