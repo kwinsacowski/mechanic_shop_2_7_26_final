@@ -1,0 +1,649 @@
+swagger: "2.0"
+
+info:
+  title: "Mechanic Shop API"
+  description: "Documentation for customers, mechanics, inventory, and service tickets."
+  version: "1.0.0"
+
+host: "127.0.0.1:5000"
+basePath: "/"
+schemes: ["http"]
+consumes: ["application/json"]
+produces: ["application/json"]
+
+tags:
+  - name: "Authentication"
+    description: "Login routes"
+  - name: "Customers"
+    description: "Customer CRUD + customer ticket views"
+  - name: "Mechanics"
+    description: "Mechanic CRUD + leaderboard"
+  - name: "Inventory"
+    description: "Parts CRUD"
+  - name: "Service Tickets"
+    description: "Ticket CRUD + assignment + parts + mechanics edits"
+
+securityDefinitions:
+  BearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "Use: Bearer <token>"
+
+# Default: protected. Override with `security: []` for public endpoints.
+security:
+  - BearerAuth: []
+
+paths:
+
+  /:
+    get:
+      tags: ["Authentication"]
+      summary: "Health check"
+      description: "Confirms API is running."
+      security: []
+      responses:
+        200:
+          description: "Status response"
+          schema:
+            $ref: "#/definitions/StatusResponse"
+          examples:
+            application/json:
+              status: "Mechanic Shop API running"
+
+  # ---------------- Customers ----------------
+
+  /customers/:
+    post:
+      tags: ["Customers"]
+      summary: "Create customer"
+      description: "Creates a new customer."
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/CustomerPayload"
+      responses:
+        201:
+          description: "Customer created"
+          schema:
+            $ref: "#/definitions/CustomerResponse"
+          examples:
+            application/json:
+              id: 1
+              name: "Jane Doe"
+              email: "jane@email.com"
+
+    get:
+      tags: ["Customers"]
+      summary: "Get customers"
+      description: "Returns all customers."
+      responses:
+        200:
+          description: "List of customers"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CustomerResponse"
+
+  /customers/{id}:
+    get:
+      tags: ["Customers"]
+      summary: "Get customer"
+      description: "Fetch a single customer by id."
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Customer found"
+          schema:
+            $ref: "#/definitions/CustomerResponse"
+        404:
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+    put:
+      tags: ["Customers"]
+      summary: "Update customer"
+      description: "Update customer fields."
+      parameters:
+        - $ref: "#/parameters/IdParam"
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/CustomerUpdatePayload"
+      responses:
+        200:
+          description: "Updated customer"
+          schema:
+            $ref: "#/definitions/CustomerResponse"
+        404:
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+    delete:
+      tags: ["Customers"]
+      summary: "Delete customer"
+      description: "Delete a customer by id."
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Deleted"
+          schema:
+            $ref: "#/definitions/DeleteResponse"
+          examples:
+            application/json:
+              message: "Customer deleted"
+
+  /customers/login:
+    post:
+      tags: ["Authentication"]
+      summary: "Login customer"
+      description: "Logs in a customer and returns a token (if implemented)."
+      security: []
+      parameters:
+        - in: body
+          name: credentials
+          required: true
+          schema:
+            $ref: "#/definitions/LoginPayload"
+      responses:
+        200:
+          description: "Token returned"
+          schema:
+            $ref: "#/definitions/LoginResponse"
+          examples:
+            application/json:
+              token: "eyJhbGciOi..."
+        400:
+          description: "Invalid credentials"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /customers/my-tickets:
+    get:
+      tags: ["Customers"]
+      summary: "Get my tickets"
+      description: "Returns tickets for the authenticated customer."
+      responses:
+        200:
+          description: "List of tickets"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ServiceTicketResponse"
+        401:
+          description: "Unauthorized"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # ---------------- Inventory ----------------
+
+  /inventory/:
+    post:
+      tags: ["Inventory"]
+      summary: "Create part"
+      description: "Creates a new inventory part."
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/InventoryPayload"
+      responses:
+        201:
+          description: "Created part"
+          schema:
+            $ref: "#/definitions/InventoryResponse"
+
+    get:
+      tags: ["Inventory"]
+      summary: "Get parts"
+      description: "Returns all inventory parts."
+      responses:
+        200:
+          description: "List of parts"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/InventoryResponse"
+
+  /inventory/{id}:
+    get:
+      tags: ["Inventory"]
+      summary: "Get part"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Part found"
+          schema:
+            $ref: "#/definitions/InventoryResponse"
+        404:
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+    put:
+      tags: ["Inventory"]
+      summary: "Update part"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/InventoryUpdatePayload"
+      responses:
+        200:
+          description: "Updated part"
+          schema:
+            $ref: "#/definitions/InventoryResponse"
+
+    delete:
+      tags: ["Inventory"]
+      summary: "Delete part"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Deleted"
+          schema:
+            $ref: "#/definitions/DeleteResponse"
+
+  # ---------------- Mechanics ----------------
+
+  /mechanics/:
+    post:
+      tags: ["Mechanics"]
+      summary: "Create mechanic"
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/MechanicPayload"
+      responses:
+        201:
+          description: "Mechanic created"
+          schema:
+            $ref: "#/definitions/MechanicResponse"
+
+    get:
+      tags: ["Mechanics"]
+      summary: "Get mechanics"
+      responses:
+        200:
+          description: "List of mechanics"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/MechanicResponse"
+
+  /mechanics/{id}:
+    get:
+      tags: ["Mechanics"]
+      summary: "Get mechanic"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Mechanic found"
+          schema:
+            $ref: "#/definitions/MechanicResponse"
+
+    put:
+      tags: ["Mechanics"]
+      summary: "Update mechanic"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/MechanicUpdatePayload"
+      responses:
+        200:
+          description: "Updated mechanic"
+          schema:
+            $ref: "#/definitions/MechanicResponse"
+
+    delete:
+      tags: ["Mechanics"]
+      summary: "Delete mechanic"
+      parameters:
+        - $ref: "#/parameters/IdParam"
+      responses:
+        200:
+          description: "Deleted"
+          schema:
+            $ref: "#/definitions/DeleteResponse"
+
+  /mechanics/leaderboard/most-tickets:
+    get:
+      tags: ["Mechanics"]
+      summary: "Leaderboard: most tickets"
+      description: "Returns mechanics ranked by assigned ticket count."
+      responses:
+        200:
+          description: "Leaderboard"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/LeaderboardEntry"
+
+  # ---------------- Service Tickets ----------------
+
+  /service-tickets/:
+    post:
+      tags: ["Service Tickets"]
+      summary: "Create service ticket"
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/ServiceTicketPayload"
+      responses:
+        201:
+          description: "Ticket created"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+    get:
+      tags: ["Service Tickets"]
+      summary: "Get service tickets"
+      responses:
+        200:
+          description: "List of tickets"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ServiceTicketResponse"
+
+  /service-tickets/{ticket_id}:
+    put:
+      tags: ["Service Tickets"]
+      summary: "Edit service ticket"
+      parameters:
+        - $ref: "#/parameters/TicketIdParam"
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/ServiceTicketUpdatePayload"
+      responses:
+        200:
+          description: "Ticket updated"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+  /service-tickets/{ticket_id}/assign-mechanic/{mechanic_id}:
+    put:
+      tags: ["Service Tickets"]
+      summary: "Assign mechanic"
+      parameters:
+        - $ref: "#/parameters/TicketIdParam"
+        - $ref: "#/parameters/MechanicIdParam"
+      responses:
+        200:
+          description: "Mechanic assigned"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+  /service-tickets/{ticket_id}/remove-mechanic/{mechanic_id}:
+    put:
+      tags: ["Service Tickets"]
+      summary: "Remove mechanic"
+      parameters:
+        - $ref: "#/parameters/TicketIdParam"
+        - $ref: "#/parameters/MechanicIdParam"
+      responses:
+        200:
+          description: "Mechanic removed"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+  /service-tickets/{ticket_id}/edit:
+    put:
+      tags: ["Service Tickets"]
+      summary: "Edit ticket mechanics"
+      description: "Edits mechanics assigned to a ticket."
+      parameters:
+        - $ref: "#/parameters/TicketIdParam"
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/TicketMechanicsEditPayload"
+      responses:
+        200:
+          description: "Ticket mechanics updated"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+  /service-tickets/{ticket_id}/add-part/{inventory_id}:
+    put:
+      tags: ["Service Tickets"]
+      summary: "Add part to ticket"
+      parameters:
+        - $ref: "#/parameters/TicketIdParam"
+        - $ref: "#/parameters/InventoryIdParam"
+      responses:
+        200:
+          description: "Part added"
+          schema:
+            $ref: "#/definitions/ServiceTicketResponse"
+
+parameters:
+  IdParam:
+    name: id
+    in: path
+    required: true
+    type: integer
+
+  TicketIdParam:
+    name: ticket_id
+    in: path
+    required: true
+    type: integer
+
+  MechanicIdParam:
+    name: mechanic_id
+    in: path
+    required: true
+    type: integer
+
+  InventoryIdParam:
+    name: inventory_id
+    in: path
+    required: true
+    type: integer
+
+definitions:
+
+  StatusResponse:
+    type: object
+    properties:
+      status:
+        type: string
+
+  ErrorResponse:
+    type: object
+    properties:
+      message:
+        type: string
+
+  DeleteResponse:
+    type: object
+    properties:
+      message:
+        type: string
+
+  LoginPayload:
+    type: object
+    required: ["email"]
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+
+  LoginResponse:
+    type: object
+    properties:
+      token:
+        type: string
+
+  CustomerPayload:
+    type: object
+    required: ["name", "email"]
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+
+  CustomerUpdatePayload:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+
+  CustomerResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+
+  MechanicPayload:
+    type: object
+    required: ["name", "email"]
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+
+  MechanicUpdatePayload:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+
+  MechanicResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+
+  InventoryPayload:
+    type: object
+    required: ["name", "quantity", "price"]
+    properties:
+      name:
+        type: string
+      quantity:
+        type: integer
+      price:
+        type: number
+        format: float
+
+  InventoryUpdatePayload:
+    type: object
+    properties:
+      name:
+        type: string
+      quantity:
+        type: integer
+      price:
+        type: number
+        format: float
+
+  InventoryResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      quantity:
+        type: integer
+      price:
+        type: number
+        format: float
+
+  ServiceTicketPayload:
+    type: object
+    required: ["vin", "service_date", "description", "customer_id"]
+    properties:
+      vin:
+        type: string
+      service_date:
+        type: string
+        example: "2026-02-07"
+      description:
+        type: string
+      customer_id:
+        type: integer
+
+  ServiceTicketUpdatePayload:
+    type: object
+    properties:
+      vin:
+        type: string
+      service_date:
+        type: string
+      description:
+        type: string
+      customer_id:
+        type: integer
+
+  TicketMechanicsEditPayload:
+    type: object
+    properties:
+      mechanic_ids:
+        type: array
+        items:
+          type: integer
+
+  ServiceTicketResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      vin:
+        type: string
+      service_date:
+        type: string
+      description:
+        type: string
+      customer_id:
+        type: integer
+
+  LeaderboardEntry:
+    type: object
+    properties:
+      mechanic_id:
+        type: integer
+      mechanic_name:
+        type: string
+      ticket_count:
+        type: integer
