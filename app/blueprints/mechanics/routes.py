@@ -1,6 +1,7 @@
 from flask import request
+from sqlalchemy import func
 from app.extensions import db
-from app.models import Mechanic
+from app.models import Mechanic, service_mechanics
 from app.blueprints.mechanics import mechanics_bp
 from app.blueprints.mechanics.schemas import mechanic_schema
 
@@ -67,3 +68,24 @@ def delete_mechanic(id):
     db.session.commit()
 
     return {"message": f"Mechanic {id} deleted"}, 200
+
+@mechanics_bp.get("/leaderboard/most-tickets")
+def mechanics_most_tickets():
+    rows = (
+        db.session.query(
+            Mechanic,
+            func.count(service_mechanics.c.service_ticket_id).label("ticket_count")
+        )
+        .outerjoin(service_mechanics, Mechanic.id == service_mechanics.c.mechanic_id)
+        .group_by(Mechanic.id)
+        .order_by(func.count(service_mechanics.c.service_ticket_id).desc(), Mechanic.id.asc())
+        .all()
+    )
+
+    result = []
+    for mech, ticket_count in rows:
+        data = mechanic_schema.dump(mech)
+        data["ticket_count"] = int(ticket_count)
+        result.append(data)
+
+    return result, 200
