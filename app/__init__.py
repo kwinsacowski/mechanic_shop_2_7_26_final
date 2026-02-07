@@ -1,10 +1,13 @@
 from flask import Flask
-from dotenv import load_dotenv
-
 from app.extensions import db, ma, limiter, cache
 from config import DevelopmentConfig
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 
 def create_app(config_class=DevelopmentConfig) -> Flask:
