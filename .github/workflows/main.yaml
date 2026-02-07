@@ -1,4 +1,4 @@
-name: Flask App CI/CD
+name: CI + Deploy to Render
 
 on:
   push:
@@ -7,47 +7,7 @@ on:
     branches: ["main"]
 
 jobs:
-
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      # Convert requirements.txt to UTF-8 if needed
-      - name: Convert requirements.txt to UTF-8 if needed
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("requirements.txt")
-          data = path.read_bytes()
-
-          # Detect UTF-16 BOMs and convert to UTF-8 for pip
-          if data.startswith(b"\xff\xfe") or data.startswith(b"\xfe\xff"):
-              text = data.decode("utf-16")
-              path.write_text(text, encoding="utf-8", newline="\n")
-              print("Converted requirements.txt from UTF-16 to UTF-8.")
-          else:
-              print("requirements.txt is not UTF-16; no conversion needed.")
-          PY
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-
   test:
-    needs: build
     runs-on: ubuntu-latest
 
     env:
@@ -65,16 +25,45 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Convert requirements.txt to UTF-8 if needed
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("requirements.txt")
+          data = path.read_bytes()
+          if data.startswith(b"\xff\xfe") or data.startswith(b"\xfe\xff"):
+              text = data.decode("utf-16")
+              path.write_text(text, encoding="utf-8", newline="\n")
+              print("Converted requirements.txt from UTF-16 to UTF-8.")
+          else:
+              print("requirements.txt is not UTF-16; no conversion needed.")
+          PY
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Print debugging information
-        run: |
-          echo "Python version:"
-          python --version
-
       - name: Run unit tests
         run: |
           python -m unittest discover -s tests -p "test_*.py" -v
+
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    # Only deploy on pushes to main (not on pull requests)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ secrets.SERVICE_ID }}
+        run: |
+          curl -sS -X POST "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}' | cat
