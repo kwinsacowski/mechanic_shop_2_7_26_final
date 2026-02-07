@@ -3,6 +3,21 @@ Mechanic Shop API
 A RESTful API for managing customers, mechanics, service tickets, and inventory in a mechanic shop environment. This project demonstrates secure authentication using JWT, relational database design with SQLAlchemy, interactive API documentation using Swagger, and comprehensive automated testing using Python's built-in unittest framework.
 
 -----
+
+Live Deployment
+    Render Deployment URL:
+        https://mechanic-shop-2-7-26-final.onrender.com/
+    Swagger Documentation
+        https://mechanic-shop-2-7-26-final.onrender.com/api/docs/
+    
+    This deployment uses:
+    - Render Web Service
+    - Render PostgreSQL database
+    - Gunicorn production server
+    - HTTPS secure connectiion
+
+-----
+
 Features
 - Customer account creation and authentication
 - JWT token authentication for protected routes
@@ -22,7 +37,8 @@ Technology Stack
         Flask
         SQLAlchemy
         Marshmallow
-        MySQL (or SQLite for testing)
+        PostgreSQL (Render production)
+        SQLite (local testing)
 
     Authentication
         JWT (python-jose)
@@ -39,35 +55,58 @@ Technology Stack
 
 Project Structure
 
-mechanic_shop/
+mechanic_shop_final/
+│
+├── flask_app.py
+├── config.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── .github/
+│   └── workflows/
+│       └── main.yaml
 │
 ├── app/
-│   ├── blueprints/
-│   │   ├── customers/
-│   │   ├── mechanics/
-│   │   ├── inventory/
-│   │   └── service_tickets/
+│   ├── __init__.py
+│   ├── extensions.py
+│   ├── models.py
+│   │
+│   ├── utils/
+│   │   └── auth.py
 │   │
 │   ├── static/
 │   │   └── swagger.yaml
 │   │
-│   ├── utils/
-│   │   └── util.py
-│   │
-│   ├── models.py
-│   ├── extensions.py
-│   └── __init__.py
+│   └── blueprints/
+│       ├── customers/
+│       │   ├── __init__.py
+│       │   ├── routes.py
+│       │   └── schemas.py
+│       │
+│       ├── mechanics/
+│       │   ├── __init__.py
+│       │   ├── routes.py
+│       │   └── schemas.py
+│       │
+│       ├── inventory/
+│       │   ├── __init__.py
+│       │   ├── routes.py
+│       │   └── schemas.py
+│       │
+│       └── service_tickets/
+│           ├── __init__.py
+│           ├── routes.py
+│           └── schemas.py
 │
-├── tests/
-│   ├── test_customers.py
-│   ├── test_mechanics.py
-│   ├── test_inventory.py
-│   ├── test_service_tickets.py
-│   └── test_home.py
-│
-├── run.py
-├── requirements.txt
-└── README.md
+└── tests/
+    ├── __init__.py
+    ├── test_customers.py
+    ├── test_mechanics.py
+    ├── test_inventory.py
+    ├── test_service_tickets.py
+    └── test_home.py
+
 
 -----
 
@@ -133,7 +172,7 @@ Swagger includes:
 
 Installation Instructions
 1. Clone the repository
-    git clone https://github.com/kwinsacowski/mechanic_shop_2_7_26_part3
+    https://github.com/kwinsacowski/mechanic_shop_2_7_26_final
     cd mechanic_shop
 
 2. Create virtual environment
@@ -148,15 +187,66 @@ Installation Instructions
 3. Install dependencies
     pip install -r requirements.txt
 
------   
+-----
+
+Deployment (Render)
+
+This API is deployed using Render with PostgreSQL and Gunicorn.
+
+Deployment steps:
+
+1. Create a Render PostgreSQL database
+2. Create a Render Web Service connected to the GitHub repository
+3. Set environment variables in Render:
+
+    DATABASE_URL=<Render PostgreSQL External URL>
+    SECRET_KEY=<secure random string>
+
+4. Set Start Command in Render:
+
+    gunicorn flask_app:app
+
+5. Render automatically deploys on every push to main via GitHub Actions CI/CD pipeline.
+
+-----
+
+CI/CD Pipeline (GitHub Actions)
+
+This project uses GitHub Actions for automated testing and deployment.
+
+Pipeline workflow:
+
+1. Runs unit tests automatically on every push
+2. If tests pass, triggers automatic deployment to Render using Render API
+3. Ensures only tested and validated code is deployed
+
+Workflow file location:
+
+.github/workflows/main.yaml
+
+-----
 
 Running the Application
     Start the Flask server:
-        python run.py
+        python flask_app.py
     Server runs at:
         http://127.0.0.1:5000
     Swagger documentation:
-        http://127.0.0.1:5000/api/docs
+        Local:
+            http://127.0.0.1:5000/api/docs
+        Production:
+            https://mechanic-shop-final.onrender.com/api/docs
+
+-----
+
+Security
+
+Sensitive data is protected using:
+
+- JWT authentication
+- Environment variables for SECRET_KEY and DATABASE_URL
+- HTTPS encryption via Render
+- Password hashing using Werkzeug
 
 -----
 
