@@ -3,7 +3,7 @@ from sqlalchemy import func
 from app.extensions import db
 from app.models import Mechanic, service_mechanics
 from app.blueprints.mechanics import mechanics_bp
-from app.blueprints.mechanics.schemas import mechanic_schema
+from app.blueprints.mechanics.schemas import mechanic_schema, mechanics_schema
 
 # CREATE mechanic
 @mechanics_bp.post("/")
@@ -28,9 +28,9 @@ def create_mechanic():
 @mechanics_bp.get("/")
 def get_mechanics():
 
-    mechanic = Mechanic.query.all()
+    mechanics = Mechanic.query.all()
 
-    return mechanic_schema.dump(mechanic), 200
+    return mechanics_schema.dump(mechanics), 200
 
 #GET mechanic by ID
 @mechanics_bp.get("/<int:id>")
